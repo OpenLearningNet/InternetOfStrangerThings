@@ -21,7 +21,7 @@ class Cabinet(object):
     self.did_button_change = False
     button_value = self.button.value()
     if button_value != self.last_button_value:
-      if self.button_trigger <= 0: 
+      if self.time_until_button_trigger <= 0: 
         self.did_button_change = True
         self.last_button_value = button_value
         self.is_button_pressed = bool(button_value)
