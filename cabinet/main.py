@@ -1,5 +1,6 @@
 import runtime
 import http_client
+import pinout
 
 SERVER_ENDPOINT = 'http://gadgets.openlearning.space/cabinet'
 DEBOUNCE_TIME = 100
