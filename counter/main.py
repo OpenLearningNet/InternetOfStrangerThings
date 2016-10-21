@@ -2,6 +2,20 @@ from machine import Pin, SPI
 import network
 import time
 
+D5 = 14
+D6 = 12
+D7 = 13
+
+DIN = Pin(D7, Pin.IN)
+CS  = Pin(D6, Pin.OUT)
+CLK = Pin(D5, Pin.OUT)
+
+MAXREG_DECODEMODE = 0x09
+MAXREG_INTENSITY  = 0x0a
+MAXREG_SCANLIMIT  = 0x0b
+MAXREG_SHUTDOWN   = 0x0c
+MAXREG_DISPTEST   = 0x0f
+
 def wifi_connect(essid, password):
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
@@ -16,3 +30,9 @@ def wifi_connect(essid, password):
   return wlan
 
 wifi_connect('openlearning.com', 'AbsurdCyclicDungeonPipe')
+
+spi = SPI(1, polarity=0, phase=0)
+
+CS.low()
+spi.write(bytearray[0x0F, 0x01])
+CS.high()
