@@ -45,5 +45,6 @@ def on_keypad_change(pin):
 
     all_rows_on()
 
+all_rows_on()
 for col in cols:
     col.irq(trigger=Pin.IRQ_RISING, handler=on_keypad_change)
