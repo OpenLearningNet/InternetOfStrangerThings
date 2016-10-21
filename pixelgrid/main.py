@@ -18,10 +18,10 @@ rows = [
     Pin(D0, Pin.OUT)
 ]
 cols = [
-    Pin(D5, Pin.IN, Pin.PULLDOWN),
-    Pin(D6, Pin.IN, Pin.PULLDOWN),
-    Pin(D7, Pin.IN, Pin.PULLDOWN),
-    Pin(D8, Pin.IN, Pin.PULLDOWN)
+    Pin(D5, Pin.IN, Pin.PULL_UP),
+    Pin(D6, Pin.IN, Pin.PULL_UP),
+    Pin(D7, Pin.IN, Pin.PULL_UP),
+    Pin(D8, Pin.IN, Pin.PULL_UP)
 ]
 
 def all_rows_on():
@@ -34,17 +34,17 @@ def all_rows_off():
 
 def on_keypad_change(pin):
     rows_pressed = []
-    all_rows_off()
+    all_rows_on()
     for row in rows:
-        row.high()
-        if pin.value():
-            rows_pressed.append(row)
         row.low()
+        if pin.value() == 0:
+            rows_pressed.append(row)
+        row.high()
 
     print('col', pin, 'rows', rows_pressed)
 
-    all_rows_on()
+    all_rows_off()
 
-all_rows_on()
+all_rows_off()
 for col in cols:
-    col.irq(trigger=Pin.IRQ_RISING, handler=on_keypad_change)
+    col.irq(trigger=Pin.IRQ_FALLING, handler=on_keypad_change)
