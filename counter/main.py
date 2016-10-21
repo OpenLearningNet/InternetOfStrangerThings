@@ -1,3 +1,7 @@
+from machine import Pin, SPI
+import network
+import time
+
 def wifi_connect(essid, password):
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
