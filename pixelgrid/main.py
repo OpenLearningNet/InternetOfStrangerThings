@@ -29,7 +29,7 @@ def all_rows_on():
         row.high()
 
 def all_rows_off():
-    for row in rowS:
+    for row in rows:
         row.low()
 
 def on_keypad_change(pin):
