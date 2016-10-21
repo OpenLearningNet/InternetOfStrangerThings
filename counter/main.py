@@ -1,6 +1,7 @@
 from machine import Pin, SPI
 import network
 import time
+import webrepl
 
 def wifi_connect(essid, password):
   wlan = network.WLAN(network.STA_IF)
@@ -16,3 +17,4 @@ def wifi_connect(essid, password):
   return wlan
 
 wifi_connect('openlearning.com', 'AbsurdCyclicDungeonPipe')
+webrepl.start()
