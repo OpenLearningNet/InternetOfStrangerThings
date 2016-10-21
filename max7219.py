@@ -42,6 +42,9 @@ class Matrix8x8:
             raise ValueError("Brightness out of range")
         self._register(_INTENSITY, value)
 
+    def test(self):
+        self._register(_DISPLAYTEST, 1)
+
     def fill(self, color):
         data = 0xff if color else 0x00
         for y in range(8):
