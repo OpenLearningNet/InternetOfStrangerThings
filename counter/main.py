@@ -7,7 +7,7 @@ D5 = 14
 D6 = 12
 D7 = 13
 
-DIN = Pin(D7, Pin.IN)
+DIN = Pin(D7, Pin.OUT)
 CS  = Pin(D6, Pin.OUT)
 CLK = Pin(D5, Pin.OUT)
 
