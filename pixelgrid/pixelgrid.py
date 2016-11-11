@@ -17,7 +17,7 @@ D8 = 15
 
 leds = NeoPixel(Pin(D8), 16)
 colors = [(112,0)] * 16
-animation = [10, 11, 4, 2, 1, 7, 8, 14, 13]
+animation = [6, 7, 8, 14, 13, 11, 4, 2, 1]
 rows = [
     Pin(D0, Pin.OUT),
     Pin(D1, Pin.OUT),
@@ -33,14 +33,17 @@ cols = [
 timer = Timer(-1)
 cycles_pressed = 0
 cycles_since_refresh = 0
+cycles_since_throttle = 0
 pending_updates = {}
 change_to_color = {}
 change_to_lum = {}
 init_cycles = 0
 requires_update = True
+requires_refresh = True
 
 PRESS_FOR = 4
-UPDATE_EVERY = 30
+REFRESH = 200
+THROTTLE = 20
 
 def set_rows(value):
     global rows
@@ -55,7 +58,7 @@ def scan_rows():
     set_rows(1)
     for col_index, col in enumerate(cols):
         for row_index, row in enumerate(rows):
-            button_index = row_index * 4
+            button_index = (3 - row_index) * 4
             if row_index % 2 == 0:
                 button_index += col_index
             else:
@@ -121,7 +124,7 @@ def change_light(index):
     leds[index] = (g, r, b)
 
 def update(timer):
-    global colors, leds, cycles_pressed, cycles_since_refresh
+    global colors, leds, cycles_pressed, cycles_since_refresh, cycles_since_throttle
     global pending_updates, change_to_color, change_to_lum, init_cycles
     global requires_update
 
@@ -144,7 +147,7 @@ def update(timer):
             h = h % 256
             change_to_color[button] = h
         elif cycles_pressed > PRESS_FOR:
-            l += 4
+            l += 8
             l = l % 192
             if button in change_to_color:
                 del change_to_color[button]
@@ -188,12 +191,17 @@ def update(timer):
         leds.write()
 
     cycles_since_refresh += 1
-    if cycles_since_refresh > UPDATE_EVERY and len(buttons) == 0:
-        requires_update = True
+    if cycles_since_refresh > REFRESH and len(buttons) == 0:
+        requires_refresh = True
         cycles_since_refresh = 0
 
+    cycles_since_throttle += 1
+    if cycles_since_throttle > THROTTLE and len(buttons) == 0:
+        requires_update = True
+        cycles_since_throttle = 0
+
 def init(url):
-    global timer, leds, pending_updates, requires_update, colors
+    global timer, leds, pending_updates, requires_update, requires_refresh, colors
     set_rows(0)
     print('Setting up...')
     timer.init(period=100, mode=Timer.PERIODIC, callback=update)
@@ -201,36 +209,62 @@ def init(url):
         change_light(color)
     leds.write()
 
-    url_parts = url.split('/', 3)
-    host = url_parts[2]
-    path = '' if len(url_parts) < 4 else url_parts[3]
+    url_parts = url.split(':', 2)
+    host = url_parts[0]
+    port = int(url_parts[1])
 
-    connection = server.init(host, 80, path)
+    connection = server.init(host, port)
+    errors_occurred = 0
+
+    received_updates = True
 
     while True:
-        time.sleep_ms(100)
-        if len(pending_updates) > 0:
-            data = []
-            for index, update_data in pending_updates.items():
-                h, l = update_data
-                data.append(str(index) + ':' + str(h) + ';' + str(l))
+        try:
+            if requires_update:
+                if len(pending_updates) > 0:
+                    server.send(connection, pending_updates)
+                    pending_updates = {}
 
-            server.send(connection, ','.join(data))
-            pending_updates = {}
+                if received_updates:
+                    leds.write()
+                    received_updates = False
 
-        if requires_update:
-            response = None
-            response = server.recv(connection)
+                requires_update = False
 
-            if response:
-                parts = response.split(',')
-                for index, part in enumerate(parts):
-                    h_val, l_val = part.split(';')
-                    if str(index) not in pending_updates:
-                        colors[index] = int(h_val), int(l_val)
+            if requires_refresh:
+                server.request(connection)
+                requires_refresh = False
+
+            try:
+                new_data = server.recv(connection)
+            except Exception:
+                new_data = {}
+
+            if new_data is None:
+                errors_occurred += 1
+                new_data = {}
+            else:
+                errors_occurred = 0
+
+            if len(new_data) > 0:
+                for key, val in new_data.items():
+                    index = int(key)
+                    if key not in pending_updates:
+                        colors[index] = val
                         change_light(index)
-                leds.write()
+                        print('Changing', key, val)
+                    else:
+                        print('Skipping', key, pending_updates)
+                received_updates = True
 
-            requires_update = False
+            if errors_occurred > 100:
+                errors_occurred = 0
+                requires_refresh = True
+                raise Exception("Resetting")
+
+        except Exception as err:
+            print(err)
+            server.end(connection)
+            connection = server.init(host, port)
 
         gc.collect()

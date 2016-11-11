@@ -1,33 +1,38 @@
 import usocket
 
-def init(host, port, path):
+def init(host, port):
     addr_info = usocket.getaddrinfo(host, port)
     addr = addr_info[0][4]
-    return (addr, path, host)
+    sock = usocket.socket()
+    sock.settimeout(2)
+    sock.connect(addr)
+    print('Connected to', addr)
+    return sock
+
+def request(connection):
+    sock = connection
+    sock.write('GET\n')
 
 def recv(connection):
-    return send(connection, None, method='GET')
+    sock = connection
 
-def send(connection, data, method='POST'):
-    addr, path, host = connection
+    data = None
 
-    sock = usocket.socket()
-    sock.connect(addr)
-    sock.write('%s /%s HTTP/1.0\r\nHost: %s\r\n' % (method, path, host))
+    line = sock.readline().decode('utf-8')
+    if line.startswith('SET>'):
+        data = {}
+        payload = line.split('SET>')[1].split(':')
+        data[payload[0]] = tuple(int(item) for item in payload[1].split(','))
 
-    if data is not None:
-        sock.write('content-length: %s\r\n' % len(data))
-        sock.write('\r\n')
-        sock.write(data)
-    else:
-        sock.write('\r\n')
+    print('Received', data)
+    return data
 
-    l = sock.readline()
-    _, status, msg = l.split(None, 2)
+def send(connection, data):
+    sock = connection
+    payload = []
+    for key, val in data.items():
+        sock.write('SET>' + str(key) + ':' + ','.join(str(v) for v in val) + '\n')
+    print('Sent', data)
 
-    while sock.readline() != b'\r\n':
-        pass
-
-    content = sock.read()
-    sock.close()
-    return content.decode('utf-8')
+def end(connection):
+    connection.close()

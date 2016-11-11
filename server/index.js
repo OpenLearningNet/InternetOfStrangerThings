@@ -2,7 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
 
-app.use(bodyParser.raw());
+app.use(bodyParser.text({type: '*/*'}));
 
 const pixel_data = [
   [112, 128],

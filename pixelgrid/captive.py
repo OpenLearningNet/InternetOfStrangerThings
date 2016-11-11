@@ -130,6 +130,8 @@ def init(essid, password):
 
         if counter >= 20:
           is_running = False
+
+    s.close()
     udps.close()
     ap.active(False)
 
