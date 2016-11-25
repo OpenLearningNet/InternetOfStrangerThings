@@ -1,12 +1,25 @@
 import usocket
+import time
 
 def init(host, port):
     addr_info = usocket.getaddrinfo(host, port)
     addr = addr_info[0][4]
-    sock = usocket.socket()
-    sock.settimeout(2)
-    sock.connect(addr)
-    print('Connected to', addr)
+
+    is_connected = False
+
+    while not is_connected:
+        try:
+            sock = usocket.socket()
+            sock.settimeout(2)
+            print('Connecting to', addr)
+            sock.connect(addr)
+            is_connected = True
+        except OSError as err:
+            print(err)
+            print('Trying again in 10s')
+            time.sleep(10)
+
+    print('Connected!')
     return sock
 
 def request(connection):

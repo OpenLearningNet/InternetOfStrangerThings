@@ -1,5 +1,10 @@
 // Load the TCP Library
-net = require('net');
+var net = require('net');
+
+// for Web APIs
+var express = require('express')
+var app = express()
+var bodyParser = require('body-parser');
 
 var clients = [];
 
@@ -21,6 +26,58 @@ const pixel_data = [
   [112, 128],
   [112, 128]
 ];
+
+
+// Web API
+app.use(bodyParser.urlencoded());
+app.use(bodyParser.json());
+
+app.get('/', function (req, res) {
+  res.json({
+    pixels: pixel_data
+  });
+});
+app.post('/', function(req, res) {
+  var index = parseInt(req.body.index, 10);
+  var hue = parseInt(req.body.hue, 10);
+  var lum = parseInt(req.body.lum, 10);
+  var didSet = false;
+  if (index < pixel_data.length && index >= 0) {
+    hue = hue % 256;
+    lum = lum % 256;
+    pixel_data[index] = [hue, lum];
+    didSet = true;
+  }
+  updateAll();
+  res.json({
+    success: didSet,
+    pixels: pixel_data
+  });
+});
+
+// Start Web Server
+app.listen(3210, function () {
+  console.log('Web Server Running on 3210')
+});
+
+// Send a message to all clients
+function broadcast(message, sender) {
+  clients.forEach(function (client) {
+    // Don't want to send it to sender
+    if (client === sender) return;
+    client.write(message);
+  });
+  // Log it to the server output too
+  process.stdout.write(message)
+}
+
+// Update all clients
+function updateAll() {
+  const data_array = pixel_data.map((item) => item.join(','));
+  data_array.forEach((item, i) => {
+    broadcast('SET>' + i + ':' + item + '\n', null);
+  });
+}
 
 // Start a TCP Server
 net.createServer(function (socket) {
@@ -63,17 +120,6 @@ net.createServer(function (socket) {
     clients.splice(clients.indexOf(socket), 1);
     process.stdout.write(socket.name + " disconnected.\n");
   });
-
-  // Send a message to all clients
-  function broadcast(message, sender) {
-    clients.forEach(function (client) {
-      // Don't want to send it to sender
-      if (client === sender) return;
-      client.write(message);
-    });
-    // Log it to the server output too
-    process.stdout.write(message)
-  }
 }).listen(5000);
 
 // Put a friendly message on the terminal of the server.
