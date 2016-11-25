@@ -21,8 +21,8 @@ params = captive.init('PixelTron', 'swordfish')
 
 
 if params is not None:
-    essid = params.get('essid', '')
-    password = params.get('password', '')
+    essid = params.get('essid', '').replace('+', ' ')
+    password = params.get('password', '').replace('+', ' ')
     server = params.get('server', '').replace('%2F', '/').replace('%2f', '/')
     server = server.replace('%3A', ':').replace('%3a', ':')
     print('Writing Setup')
